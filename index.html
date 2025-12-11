@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Is the Juice Worth the Squeeze?</title>
+    
+    <!-- 1. Load Tailwind CSS (Styling) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Load React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- 3. Load Babel (to understand JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 4. Load Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Nunito', 'Poppins', sans-serif; }
+        .blob-btn {
+            background: linear-gradient(135deg, #FF9F1C, #F57C00);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .blob-btn:active { transform: scale(0.95); }
+        .bubble {
+            position: absolute;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+        }
+        /* Tailwind configuration for custom colors */
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            orange: { 500: '#FF9F1C' },
+                        }
+                    }
+                }
+            }
+        </script>
+    </style>
+</head>
+<body class="bg-[#FDFBF7] text-[#4A3B32]">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Simple Icon Components to replace imports
+        const Icon = ({ path, size = 16, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {path}
+            </svg>
+        );
+
+        const RefreshCw = (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></>} />;
+        const Calendar = (props) => <Icon {...props} path={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>} />;
+        const Hammer = (props) => <Icon {...props} path={<><path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25V2.46V2a2 2 0 0 0-2-2H2v6.24c0 .85.33 1.66.93 2.25l1.25 1.25"/><path d="M3 3l17.64 17.64"/></>} />;
+
+        const COLORS = {
+            orange: '#FF9F1C',
+            yellow: '#FFBF00',
+            lime: '#D4E157',
+            red: '#FF6B6B',
+        };
+
+        const App = () => {
+            const [inputs, setInputs] = useState({
+                frequency: 'daily',
+                durationVal: 52,
+                durationUnit: 'weeks',
+                manualTime: 30,
+                aiTime: 5,
+                buildTime: 4,
+            });
+
+            const [result, setResult] = useState(null);
+            const [isAnimating, setIsAnimating] = useState(false);
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setInputs(prev => ({ ...prev, [name]: value }));
+            };
+
+            const triggerConfetti = () => {
+                if (window.confetti) {
+                    window.confetti({
+                        particleCount: 150,
+                        spread: 80,
+                        origin: { y: 0.6 },
+                        colors: [COLORS.orange, COLORS.yellow, COLORS.lime, '#ffffff'],
+                        shapes: ['circle', 'square'],
+                        scalar: 1.2
+                    });
+                }
+            };
+
+            const calculateROI = () => {
+                setIsAnimating(true);
+                
+                let instancesPerWeek = 0;
+                if (inputs.frequency === 'daily') instancesPerWeek = 5;
+                if (inputs.frequency === 'weekly') instancesPerWeek = 1;
+                if (inputs.frequency === 'monthly') instancesPerWeek = 0.23;
+                if (inputs.frequency === 'adhoc') instancesPerWeek = 0.1; 
+
+                let totalWeeks = parseFloat(inputs.durationVal);
+                if (inputs.durationUnit === 'months') totalWeeks = totalWeeks * 4.33;
+                if (inputs.durationUnit === 'years') totalWeeks = totalWeeks * 52;
+
+                const totalInstances = instancesPerWeek * totalWeeks;
+                const manualMins = parseFloat(inputs.manualTime);
+                const aiMins = parseFloat(inputs.aiTime);
+                const timeSavedPerInstance = manualMins - aiMins;
+
+                const grossMinutesSaved = totalInstances * timeSavedPerInstance;
+                const grossHoursSaved = grossMinutesSaved / 60;
+
+                const buildHours = parseFloat(inputs.buildTime);
+                const netHoursSaved = grossHoursSaved - buildHours;
+
+                setTimeout(() => {
+                    setResult({
+                        grossHours: grossHoursSaved.toFixed(1),
+                        buildHours: buildHours.toFixed(1),
+                        netHours: netHoursSaved.toFixed(1),
+                        isWorthIt: netHoursSaved > 0,
+                        instances: Math.ceil(totalInstances),
+                    });
+                    setIsAnimating(false);
+                    
+                    if (netHoursSaved > 0) {
+                        triggerConfetti();
+                    }
+                }, 800);
+            };
+
+            const getVerdictEmoji = () => {
+                if (!result) return '';
+                if (parseFloat(result.netHours) > 100) return '🤯';
+                return result.isWorthIt ? '🧃' : '🍋';
+            };
+
+            return (
+                <div className="min-h-screen font-sans selection:bg-orange-200 pb-10">
+                    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
+                        
+                        <header className="text-center mb-10">
+                            <div className="inline-block bg-orange-100 rounded-full px-4 py-1 mb-4 border border-orange-200 shadow-sm">
+                                <span className="text-sm font-bold text-orange-600 tracking-wide uppercase">ROI Calculator 2.0</span>
+                            </div>
+                            <h1 className="text-4xl md:text-5xl font-extrabold mb-3 text-gray-900 leading-tight">
+                                Is the Juice <br className="md:hidden"/> Worth the Squeeze? 🍊
+                            </h1>
+                            <p className="text-lg text-gray-600 max-w-xl mx-auto">
+                                Factor in your build time to see if automating that workflow is a net win or a time sink.
+                            </p>
+                        </header>
+
+                        <div className="grid lg:grid-cols-2 gap-8 items-start">
+                            
+                            {/* LEFT COLUMN */}
+                            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-orange-100 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500"></div>
+                                
+                                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                                    <span className="bg-orange-100 p-2 rounded-lg text-xl">🛒</span> 
+                                    The Ingredients
+                                </h2>
+
+                                <div className="space-y-6">
+                                    {/* Frequency */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                            <RefreshCw size={16} className="text-orange-500"/> Task Frequency
+                                        </label>
+                                        <div className="relative">
+                                            <select name="frequency" value={inputs.frequency} onChange={handleInputChange} className="w-full bg-gray-50 border-2 border-gray-200 text-gray-800 text-lg rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-400 block p-3 appearance-none cursor-pointer transition-all">
+                                                <option value="daily">Daily (Mon-Fri)</option>
+                                                <option value="weekly">Weekly</option>
+                                                <option value="monthly">Monthly</option>
+                                                <option value="adhoc">Ad-hoc (Rarely)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Duration */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                            <Calendar size={16} className="text-orange-500"/> Project Lifespan
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input type="number" name="durationVal" value={inputs.durationVal} onChange={handleInputChange} className="w-1/3 bg-gray-50 border-2 border-gray-200 text-gray-800 text-lg rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-400 p-3 font-bold text-center" />
+                                            <div className="relative w-2/3">
+                                                <select name="durationUnit" value={inputs.durationUnit} onChange={handleInputChange} className="w-full bg-gray-50 border-2 border-gray-200 text-gray-800 text-lg rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-400 block p-3 appearance-none cursor-pointer">
+                                                    <option value="weeks">Weeks</option>
+                                                    <option value="months">Months</option>
+                                                    <option value="years">Years</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Task Times */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                                            <label className="block text-xs font-bold text-red-800 uppercase mb-2">Old Way 🐢</label>
+                                            <div className="relative">
+                                                <input type="number" name="manualTime" value={inputs.manualTime} onChange={handleInputChange} className="w-full bg-white border border-red-200 text-red-900 text-xl font-bold rounded-lg focus:ring-2 focus:ring-red-200 p-2 pr-12"/>
+                                                <span className="absolute right-3 top-3 text-red-300 text-sm font-bold">min</span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-green-50 p-4 rounded-2xl border border-green-100">
+                                            <label className="block text-xs font-bold text-green-800 uppercase mb-2">New Way 🤖</label>
+                                            <div className="relative">
+                                                <input type="number" name="aiTime" value={inputs.aiTime} onChange={handleInputChange} className="w-full bg-white border border-green-200 text-green-900 text-xl font-bold rounded-lg focus:ring-2 focus:ring-green-200 p-2 pr-12"/>
+                                                <span className="absolute right-3 top-3 text-green-300 text-sm font-bold">min</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Build Time */}
+                                    <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                                        <label className="block text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
+                                            <Hammer size={16}/> Build Cost (Est. Dev Time)
+                                        </label>
+                                        <div className="relative">
+                                            <input type="number" name="buildTime" value={inputs.buildTime} onChange={handleInputChange} className="w-full bg-white border border-blue-200 text-blue-900 text-xl font-bold rounded-lg focus:ring-2 focus:ring-blue-200 p-2 pr-12"/>
+                                            <span className="absolute right-3 top-3 text-blue-400 text-sm font-bold">hours</span>
+                                        </div>
+                                    </div>
+
+                                    <button onClick={calculateROI} disabled={isAnimating} className={`w-full blob-btn text-white text-xl font-bold py-4 rounded-xl shadow-lg shadow-orange-200 flex items-center justify-center gap-2 mt-4 hover:shadow-xl ${isAnimating ? 'opacity-80 cursor-wait' : ''}`}>
+                                        {isAnimating ? <>Squeezing... 💧</> : <>Squeeze It! 🧃</>}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* RIGHT COLUMN */}
+                            <div className="relative min-h-[500px] h-full">
+                                {!result && !isAnimating && (
+                                    <div className="bg-white/50 border-2 border-dashed border-gray-300 rounded-3xl h-full flex flex-col items-center justify-center p-8 text-center min-h-[500px]">
+                                        <div className="text-6xl mb-4 opacity-50">⚖️</div>
+                                        <h3 className="text-xl font-bold text-gray-500">The ROI Verdict</h3>
+                                        <p className="text-gray-400 mt-2">Will the build time eat all your savings?</p>
+                                    </div>
+                                )}
+
+                                {(result || isAnimating) && (
+                                <div className="bg-white rounded-3xl shadow-xl overflow-hidden h-full flex flex-col relative border border-gray-100 min-h-[500px]">
+                                    <div className="flex-grow bg-gray-50 relative flex items-end justify-center p-8 min-h-[250px]">
+                                        <div className="relative w-36 h-52 border-4 border-gray-800 rounded-b-2xl bg-white/30 backdrop-blur-sm z-10 overflow-hidden shadow-2xl">
+                                            <div className="absolute top-1/4 w-full h-0.5 bg-gray-800/10"></div>
+                                            <div className="absolute top-2/4 w-full h-0.5 bg-gray-800/10"></div>
+                                            <div className="absolute top-3/4 w-full h-0.5 bg-gray-800/10"></div>
+                                            <div 
+                                                className={`absolute bottom-0 left-0 w-full transition-all duration-1000 ease-out flex items-center justify-center ${isAnimating ? 'h-0' : ''}`}
+                                                style={{ 
+                                                height: result ? `${Math.min(Math.max((Math.abs(result.netHours) / 40) * 100, 15), 100)}%` : '0%',
+                                                backgroundColor: result?.netHours > 0 ? COLORS.orange : COLORS.red 
+                                                }}
+                                            >
+                                                {!isAnimating && (
+                                                <>
+                                                    <div className="bubble w-2 h-2 bottom-4 left-4 animate-bounce"></div>
+                                                    <div className="bubble w-3 h-3 bottom-10 right-6 animate-bounce delay-75"></div>
+                                                </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className={`absolute top-8 text-7xl transition-all duration-500 transform ${result && !isAnimating ? 'scale-100 opacity-100 rotate-12' : 'scale-0 opacity-0'}`}>
+                                            {getVerdictEmoji()}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-6 bg-white z-20 border-t border-gray-100">
+                                        {!isAnimating && result && (
+                                            <div className="text-center animate-fade-in-up">
+                                            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Net ROI (Time Saved - Build Time)</h3>
+                                            <div className={`text-5xl font-black mb-2 ${result.netHours > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                {result.netHours > 0 ? '+' : ''}{result.netHours} <span className="text-2xl font-bold text-gray-400">Hours</span>
+                                            </div>
+                                            <div className={`py-2 px-4 rounded-lg inline-block font-bold mb-6 text-sm ${result.isWorthIt ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {result.isWorthIt ? `🧃 Worth the squeeze!` : "🍋 Sour! You spent more time building than saving."}
+                                            </div>
+                                            </div>
+                                        )}
+                                        {isAnimating && <div className="text-center py-10"><p className="text-orange-500 font-bold animate-pulse">Crunching the numbers...</p></div>}
+                                    </div>
+                                </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
